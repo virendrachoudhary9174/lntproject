@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CodeQuest Quiz Challenge</title>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<style>
+:root {
+    --primary: #6257e8;
+    --bg: #f3f5fb;
+    --card: #fff;
+    --text: #20243a;
+    --muted: #6d7489;
+    --border: #e1e5ef;
+    --green: #168754;
+    --red: #d93848;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 24px 14px;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+
+button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 3px solid #ffbf47;
+    outline-offset: 2px;
+}
+
+.app { max-width: 780px; margin: 20px auto; }
+
+header { text-align: center; margin-bottom: 25px; }
+header h1 { margin-bottom: 6px; }
+.muted { color: var(--muted); }
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(20px, 5vw, 32px);
+    box-shadow: 0 10px 35px #26345b10;
+    margin-bottom: 20px;
+}
+
+.hidden { display: none !important; }
+
+label {
+    display: block;
+    font-weight: bold;
+    margin: 15px 0 7px;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    color: #20243a;
+}
+
+button {
+    padding: 11px 15px;
+    border: 0;
+    border-radius: 8px;
+}
+
+.primary { background: var(--primary); color: white; }
+.secondary { background: #e9eaf3; color: #343950; }
+.danger { background: var(--red); color: white; }
+
+.full { width: 100%; margin-top: 20px; }
+
+.settings-row, .quiz-top, .quiz-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.settings-row { margin-bottom: 20px; }
+.settings-row button { background: #e9eaf3; }
+
+.pill {
+    background: #efedff;
+    color: #5145d9;
+    padding: 8px 12px;
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.progress-track {
+    height: 9px;
+    background: #e9ebf3;
+    border-radius: 20px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+#progressBar {
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #6257e8, #a178ff);
+    transition: width .3s;
+}
+
+#timer { font-weight: bold; }
+#timer.urgent { color: var(--red); }
+
+#questionText {
+    font-size: clamp(20px, 4vw, 27px);
+    line-height: 1.4;
+    margin: 25px 0;
+}
+
+#options { display: grid; gap: 11px; }
+
+.option {
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    text-align: left;
+    background: white;
+    color: #20243a;
+    border: 2px solid var(--border);
+    padding: 13px;
+    border-radius: 10px;
+}
+
+.option:hover:not(:disabled) {
+    border-color: var(--primary);
+    background: #f7f6ff;
+}
+
+.option .letter {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: #eff0f7;
+    font-weight: bold;
+}
+
+.option.correct { background: #eaf8f0; border-color: var(--green); }
+.option.wrong { background: #fff0f1; border-color: var(--red); }
+.option:disabled { opacity: 1; cursor: default; }
+
+#feedback {
+    padding: 13px;
+    border-radius: 8px;
+    margin-top: 16px;
+    line-height: 1.5;
+}
+
+.good { background: #eaf8f0; color: #126b3d; }
+.bad { background: #fff0f1; color: #a31e2b; }
+
+#hintText {
+    background: #fff7dc;
+    color: #604b00;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 22px 0;
+}
+
+.stat {
+    text-align: center;
+    padding: 15px 8px;
+    background: #f5f6fc;
+    border-radius: 10px;
+}
+
+.stat strong { display: block; font-size: 24px; margin-bottom: 5px; }
+.stat span { font-size: 12px; color: var(--muted); }
+
+.review-item {
+    border-top: 1px solid var(--border);
+    padding: 15px 0;
+    line-height: 1.5;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 11px 8px; border-bottom: 1px solid var(--border); }
+th { background: #f2f3fa; }
+
+@media (max-width: 480px) {
+    .stats { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<header>
+    <h1>🚀 CodeQuest</h1>
+    <p class="muted">Learn, compete and level up your coding skills.</p>
+</header>
+
+<div class="settings-row">
+    <button id="soundBtn" type="button">🔊 Sound On</button>
+    <button id="darkBtn" type="button">🌙 Dark Mode</button>
+</div>
+
+<!-- Start -->
+<section id="startScreen" class="card">
+    <span class="pill">CODING CHALLENGE</span>
+    <h2>Ready to play?</h2>
+    <p class="muted">Enter your name, choose your difficulty and begin.</p>
+
+    <label for="playerName">Student Name</label>
+    <input id="playerName" maxlength="40" placeholder="Enter your name">
+
+    <label for="difficulty">Difficulty Level</label>
+    <select id="difficulty">
+        <option value="Easy">Easy — 20 seconds per question</option>
+        <option value="Medium" selected>Medium — 15 seconds per question</option>
+        <option value="Hard">Hard — 10 seconds per question</option>
+    </select>
+
+    <button id="startBtn" class="primary full">Start Quiz →</button>
+    <p id="startMessage" class="muted"></p>
+
+    <h3>🏆 High Scores</h3>
+    <div id="leaderboard"></div>
+</section>
+
+<!-- Quiz -->
+<section id="quizScreen" class="card hidden">
+    <div class="quiz-top">
+        <span id="questionCounter" class="pill"></span>
+        <span id="timer">⏱ 15s</span>
+        <span class="pill">⭐ <span id="score">0</span></span>
+    </div>
+
+    <div class="progress-track">
+        <div id="progressBar"></div>
+    </div>
+
+    <p class="muted" id="playerLabel"></p>
+    <h2 id="questionText"></h2>
+
+    <div id="options"></div>
+    <div id="feedback" class="hidden" aria-live="polite"></div>
+    <div id="hintText" class="hidden"></div>
+
+    <div class="quiz-bottom" style="margin-top:20px">
+        <button id="lifelineBtn" class="secondary">🃏 50:50 Lifeline</button>
+        <button id="nextBtn" class="primary" disabled>Next →</button>
+    </div>
+</section>
+
+<!-- Results -->
+<section id="resultScreen" class="card hidden">
+    <h2 id="resultTitle">Quiz Completed!</h2>
+    <p id="resultMessage" class="muted"></p>
+
+    <div class="stats">
+        <div class="stat">
+            <strong id="finalScore">0</strong>
+            <span>Points</span>
+        </div>
+        <div class="stat">
+            <strong id="finalCorrect">0/8</strong>
+            <span>Correct answers</span>
+        </div>
+        <div class="stat">
+            <strong id="finalAccuracy">0%</strong>
+            <span>Accuracy</span>
+        </div>
+    </div>
+
+    <h3>Answer Review</h3>
+    <div id="reviewList"></div>
+
+    <button id="restartBtn" class="primary full">Play Again ↻</button>
+</section>
+
+</div>
+
+<script>
+$(document).ready(function () {
+
+    const bank = {
+        Easy: [
+            {
+                q: "Which HTML tag creates a hyperlink?",
+                o: ["<a>", "<p>", "<h1>", "<img>"],
+                a: 0,
+                h: "It is called the anchor element.",
+                e: "The anchor tag creates hyperlinks, usually using the href attribute."
+            },
+            {
+                q: "Which CSS property changes text colour?",
+                o: ["font-size", "color", "padding", "border"],
+                a: 1,
+                h: "It is named after the visual property you want to change.",
+                e: "The color property sets the foreground colour of text."
+            },
+            {
+                q: "Which HTML tag displays an image?",
+                o: ["<picture-text>", "<image>", "<img>", "<src>"],
+                a: 2,
+                h: "The tag is short and commonly uses a src attribute.",
+                e: "The img element embeds an image using its src attribute."
+            },
+            {
+                q: "Which CSS property rounds corners?",
+                o: ["corner-style", "border-radius", "round-edge", "margin"],
+                a: 1,
+                h: "The property name contains the word 'radius'.",
+                e: "border-radius controls the rounding of an element's corners."
+            }
+        ],
+        Medium: [
+            {
+                q: "Which jQuery selector targets id='menu'?",
+                o: ["$('.menu')", "$('#menu')", "$('menu')", "$('*menu')"],
+                a: 1,
+                h: "An ID selector uses the hash symbol.",
+                e: "The # selector selects an element by its ID."
+            },
+            {
+                q: "Which jQuery method attaches event handlers?",
+                o: [".attach()", ".listen()", ".on()", ".event()"],
+                a: 2,
+                h: "It can handle click, input and submit events.",
+                e: "The .on() method attaches event handlers to selected elements."
+            },
+            {
+                q: "What does preventDefault() do in a form submit handler?",
+                o: [
+                    "Clears every input",
+                    "Prevents the browser's default action",
+                    "Checks the password",
+                    "Deletes the form"
+                ],
+                a: 1,
+                h: "Think about the normal browser behaviour after submitting a form.",
+                e: "preventDefault() cancels the event's default browser action."
+            },
+            {
+                q: "Which method removes an element and its associated jQuery data?",
+                o: [".empty()", ".hide()", ".remove()", ".text()"],
+                a: 2,
+                h: "It removes the selected element itself.",
+                e: ".remove() removes the element and its associated jQuery data and events."
+            }
+        ],
+        Hard: [
+            {
+                q: "Which event delegation pattern handles clicks on future .item elements inside #list?",
+                o: [
+                    "$('#list').on('click', '.item', handler)",
+                    "$('.item').on('load', handler)",
+                    "$('#list').click('.item', handler)",
+                    "$('.item').delegate('load', handler)"
+                ],
+                a: 0,
+                h: "Delegation attaches the listener to an existing ancestor.",
+                e: "Delegated .on() uses the ancestor, event type, selector and handler."
+            },
+            {
+                q: "What does event.currentTarget refer to inside an event handler?",
+                o: [
+                    "Always the document body",
+                    "The element whose handler is currently running",
+                    "Always the deepest clicked child",
+                    "The last element in the DOM"
+                ],
+                a: 1,
+                h: "Distinguish the element handling the event from the original target.",
+                e: "currentTarget refers to the element whose handler is currently executing."
+            },
+            {
+                q: "What does JSON.parse() do?",
+                o: [
+                    "Converts a JavaScript object to JSON text",
+                    "Converts valid JSON text into a JavaScript value",
+                    "Adds JSON to localStorage automatically",
+                    "Validates HTML markup"
+                ],
+                a: 1,
+                h: "Compare parsing text with serializing an object.",
+                e: "JSON.parse() parses JSON-formatted text into a JavaScript value."
+            },
+            {
+                q: "Which method converts a JavaScript value into JSON text?",
+                o: [
+                    "JSON.read()",
+                    "JSON.convert()",
+                    "JSON.parse()",
+                    "JSON.stringify()"
+                ],
+                a: 3,
+                h: "It performs the reverse direction of parsing.",
+                e: "JSON.stringify() serializes a JavaScript value into JSON text."
+            }
+        ]
+    };
+
+    let questions = [];
+    let current = 0;
+    let points = 0;
+    let correct = 0;
+    let player = "";
+    let level = "Medium";
+    let timeLimit = 15;
+    let timeLeft = 15;
+    let timerId = null;
+    let locked = false;
+    let lifelineUsed = false;
+    let soundEnabled = true;
+    let answers = [];
+
+    function screen(id) {
+        $("#startScreen, #quizScreen, #resultScreen").addClass("hidden");
+        $("#" + id).removeClass("hidden");
+    }
+
+    function shuffle(array) {
+        let copy = array.slice();
+
+        for (let i = copy.length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+
+        return copy;
+    }
+
+    function playTone(frequency) {
+        if (!soundEnabled) return;
+
+        try {
+            const AudioContextClass =
+                window.AudioContext || window.webkitAudioContext;
+
+            if (!AudioContextClass) return;
+
+            let ctx = new AudioContextClass();
+            let oscillator = ctx.createOscillator();
+            let gain = ctx.createGain();
+
+            oscillator.frequency.value = frequency;
+            gain.gain.value = 0.04;
+
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+
+            oscillator.start();
+            oscillator.stop(ctx.currentTime + 0.12);
+            oscillator.onended = function () { ctx.close(); };
+        } catch (error) {
+            // Sound is optional; quiz functionality continues.
+        }
+    }
+
+    function stopTimer() {
+        clearInterval(timerId);
+        timerId = null;
+    }
+
+    function updateTimer() {
+        $("#timer")
+            .text("⏱ " + timeLeft + "s")
+            .toggleClass("urgent", timeLeft <= 5);
+    }
+
+    function startTimer() {
+        stopTimer();
+        timeLeft = timeLimit;
+        updateTimer();
+
+        timerId = setInterval(function () {
+            timeLeft--;
+            updateTimer();
+
+            if (timeLeft <= 0) {
+                stopTimer();
+                timeoutQuestion();
+            }
+        }, 1000);
+    }
+
+    function loadQuestion() {
+        locked = false;
+        let q = questions[current];
+
+        $("#questionCounter").text(
+            "Question " + (current + 1) + " / " + questions.length
+        );
+
+        $("#playerLabel").text(
+            player + " · " + level + " difficulty"
+        );
+
+        $("#progressBar").css(
+            "width", (current / questions.length * 100) + "%"
+        );
+
+        $("#questionText").text(q.q);
+        $("#options").empty();
+
+        $("#feedback, #hintText").addClass("hidden").empty();
+
+        $("#nextBtn").prop("disabled", true);
+        $("#lifelineBtn").prop("disabled", lifelineUsed).show();
+
+        q.o.forEach(function (text, index) {
+            let button = $("<button>")
+                .addClass("option")
+                .attr("type", "button");
+
+            button.append(
+                $("<span>").addClass("letter")
+                    .text(String.fromCharCode(65 + index))
+            );
+
+            button.append($("<span>").text(text));
+
+            button.on("click", function () {
+                answerQuestion(index, button);
+            });
+
+            $("#options").append(button);
+        });
+
+        startTimer();
+    }
+
+    function showFeedback(type, message) {
+        $("#feedback")
+            .removeClass("hidden good bad")
+            .addClass(type)
+            .text(message);
+    }
+
+    function answerQuestion(index, button) {
+        if (locked) return;
+
+        locked = true;
+        stopTimer();
+
+        let q = questions[current];
+        let isCorrect = index === q.a;
+        let earned = 0;
+
+        if (isCorrect) {
+            earned = 10 + Math.floor(timeLeft / 3);
+            points += earned;
+            correct++;
+
+            button.addClass("correct");
+            showFeedback("good", "Correct! +" + earned + " points. " + q.e);
+            playTone(700);
+        } else {
+            button.addClass("wrong");
+            $("#options .option").eq(q.a).addClass("correct");
+
+            showFeedback("bad", "Not quite. " + q.e);
+            playTone(240);
+        }
+
+        $("#options .option").prop("disabled", true);
+        $("#lifelineBtn").hide();
+        $("#score").text(points);
+        $("#nextBtn").prop("disabled", false);
+
+        answers[current] = {
+            selected: index,
+            correct: q.a,
+            earned: earned
+        };
+    }
+
+    function timeoutQuestion() {
+        if (locked) return;
+
+        locked = true;
+        let q = questions[current];
+
+        $("#options .option").prop("disabled", true);
+        $("#options .option").eq(q.a).addClass("correct");
+
+        showFeedback("bad", "Time is up! " + q.e);
+
+        $("#lifelineBtn").hide();
+        $("#nextBtn").prop("disabled", false);
+
+        answers[current] = {
+            selected: -1,
+            correct: q.a,
+            earned: 0
+        };
+    }
+
+    $("#lifelineBtn").on("click", function () {
+        if (locked || lifelineUsed) return;
+
+        lifelineUsed = true;
+
+        let q = questions[current];
+        let wrongIndexes = shuffle(
+            q.o.map(function (_, index) {
+                return index;
+            }).filter(function (index) {
+                return index !== q.a;
+            })
+        );
+
+        wrongIndexes.slice(0, 2).forEach(function (index) {
+            $("#options .option").eq(index).hide();
+        });
+
+        $("#hintText")
+            .text("50:50 activated: two incorrect options have been removed.")
+            .removeClass("hidden");
+
+        $(this).prop("disabled", true);
+    });
+
+    $("#nextBtn").on("click", function () {
+        if (!locked) return;
+
+        current++;
+
+        if (current < questions.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    });
+
+    function getScores() {
+        try {
+            let value = JSON.parse(localStorage.getItem("codequestScores") || "[]");
+            return Array.isArray(value) ? value : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function saveScore(record) {
+        try {
+            let scores = getScores();
+            scores.push(record);
+            scores.sort(function (a, b) { return b.points - a.points; });
+            localStorage.setItem("codequestScores", JSON.stringify(scores.slice(0, 5)));
+        } catch (error) {
+            $("#resultMessage").append(" High scores could not be saved in this browser.");
+        }
+    }
+
+    function renderLeaderboard() {
+        let scores = getScores();
+
+        if (!scores.length) {
+            $("#leaderboard").html(
+                '<p class="muted">Complete a quiz to create your first high score.</p>'
+            );
+            return;
+        }
+
+        let table = $("<table>");
+        table.append(
+            $("<thead>").append(
+                $("<tr>")
+                    .append($("<th>").text("Rank"))
+                    .append($("<th>").text("Student"))
+                    .append($("<th>").text("Level"))
+                    .append($("<th>").text("Points"))
+            )
+        );
+
+        let body = $("<tbody>");
+
+        scores.forEach(function (record, index) {
+            body.append(
+                $("<tr>")
+                    .append($("<td>").text(index + 1))
+                    .append($("<td>").text(record.name))
+                    .append($("<td>").text(record.level))
+                    .append($("<td>").text(record.points))
+            );
+        });
+
+        table.append(body);
+        $("#leaderboard").empty().append(table);
+    }
+
+    function showResults() {
+        stopTimer();
+        screen("resultScreen");
+
+        let accuracy = Math.round(correct / questions.length * 100);
+
+        $("#progressBar").css("width", "100%");
+        $("#resultTitle").text(
+            accuracy >= 80 ? "Excellent work, " + player + "!" :
+            accuracy >= 50 ? "Good effort, " + player + "!" :
+            "Keep practising, " + player + "!"
+        );
+
+        $("#resultMessage").text(
+            "You completed the " + level + " quiz."
+        );
+
+        $("#finalScore").text(points);
+        $("#finalCorrect").text(correct + "/" + questions.length);
+        $("#finalAccuracy").text(accuracy + "%");
+
+        $("#reviewList").empty();
+
+        questions.forEach(function (q, index) {
+            let a = answers[index];
+            let chosen = a.selected === -1
+                ? "No answer (time expired)"
+                : q.o[a.selected];
+
+            let item = $("<div>").addClass("review-item");
+
+            item.append($("<strong>").text((index + 1) + ". " + q.q));
+            item.append($("<p>").text("Your answer: " + chosen));
+            item.append($("<p>").text("Correct answer: " + q.o[q.a]));
+            item.append($("<p>").addClass("muted").text(q.e));
+
+            $("#reviewList").append(item);
+        });
+
+        saveScore({
+            name: player,
+            level: level,
+            points: points
+        });
+
+        renderLeaderboard();
+    }
+
+    $("#startBtn").on("click", function () {
+        player = $("#playerName").val().trim();
+
+        if (!player) {
+            $("#startMessage").text("Please enter your name first.");
+            $("#playerName").trigger("focus");
+            return;
+        }
+
+        level = $("#difficulty").val();
+        timeLimit = level === "Easy" ? 20 :
+                    level === "Hard" ? 10 : 15;
+
+        questions = shuffle(bank[level]);
+        current = 0;
+        points = 0;
+        correct = 0;
+        lifelineUsed = false;
+        answers = [];
+
+        $("#score").text(points);
+        $("#startMessage").text("");
+
+        screen("quizScreen");
+        loadQuestion();
+    });
+
+    $("#restartBtn").on("click", function () {
+        stopTimer();
+        screen("startScreen");
+        renderLeaderboard();
+    });
+
+    $("#soundBtn").on("click", function () {
+        soundEnabled = !soundEnabled;
+
+        $(this).text(soundEnabled ? "🔊 Sound On" : "🔇 Sound Off");
+
+        if (soundEnabled) playTone(500);
+    });
+
+    $("#darkBtn").on("click", function () {
+        let dark = $("body").toggleClass("dark").hasClass("dark");
+
+        if (dark) {
+            $("body").css({
+                background: "#15182a",
+                color: "#f3f4fa"
+            });
+
+            $(".card").css({
+                background: "#20243a",
+                borderColor: "#393e56"
+            });
+
+            $(".option").css({
+                background: "#272c43",
+                color: "#f3f4fa"
+            });
+
+            $(".stat").css("background", "#292e48");
+            $(this).text("☀️ Light Mode");
+        } else {
+            $("body, .card").removeAttr("style");
+            $(".option").removeAttr("style");
+            $(".stat").removeAttr("style");
+            $(this).text("🌙 Dark Mode");
+        }
+    });
+
+    renderLeaderboard();
+});
+</script>
+</body>
+</html>
